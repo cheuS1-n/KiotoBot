@@ -1,0 +1,8 @@
+TOKEN: Token
+mysql_ip: localhost
+mysql_port: 3306
+mysql_user: User
+mysql_password: Pass
+mysql_general_database: MyMySQLDB
+archive_ID: IDForArchive
+# Change to your MySQL Data and bot token

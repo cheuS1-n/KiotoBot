@@ -1,0 +1,5 @@
+mysql-connector-python
+PyYAML
+python-telegram-bot
+torrent_parser
+bencode.py
