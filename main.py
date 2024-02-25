@@ -1,3 +1,4 @@
+# Автор - cheuS1 | https://github.com/Telegram-search-anime-bo
 import asyncio
 import re
 from warnings import filterwarnings
@@ -5,26 +6,30 @@ import datetime
 import telegram.ext
 import yaml
 from telegram.warnings import PTBUserWarning
-
+# Лоадер конфігу
 with open('config.yaml', 'r') as file:
-    token = yaml.safe_load(file)
-    archiveID = token['archive_ID']
-    token = token['TOKEN']
+    loadedfile = yaml.safe_load(file)
+    archiveID = loadedfile['archive_ID']
+    token = loadedfile['TOKEN']
+    donatefile = loadedfile['donate-file']
+    iam = loadedfile['inline-additional-menu']
+    searchtitlevideo = loadedfile['search_title_video_ID']
 
-import logging
-from telegram.ext import Application, CommandHandler, ContextTypes, filters, MessageHandler
+#import logging
+#from telegram.ext import Application, CommandHandler, ContextTypes, filters, MessageHandler
 from MySQL_Driver import startdbs
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, KeyboardButton,
                       InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultPhoto, Message,
                       InlineKeyboardButton, InlineKeyboardMarkup)
 from telegram.ext import *
-from pathlib import Path
+#from pathlib import Path
 from conv_handlers import *
 from functions import *
 from file_func import *
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 log = logging.getLogger("KiotoBot")
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
+##################### Визначення змінних
 allanimcategories = ["Антиутопія", "Деменція", "Зомбі",
                      "Махо-шьоджьо", "Постапокаліптика", "Фантастика",
                      "Фантастика", "Джьосей", "Ісекай", "Меха", "Романтика",
@@ -61,7 +66,7 @@ k_player = [["Добавити список", "Видалити список", "
 k_addtitile = [["Стандартне додавання", "Назад"]]
 k_cancel = [["❌ Скасувати"]]
 
-
+# Функції
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     log.info(
         f"Прийнятий запит на генерацію InlineQuery, юзер {update.effective_user.full_name} {update.effective_user.id}")
@@ -216,13 +221,18 @@ async def replaceinfo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if UserIsAdmin(update.effective_user.id):
         await update.effective_chat.send_message("Що хочеш зробити?", reply_markup=ReplyKeyboardMarkup(k_replace))
 async def search_title_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "Щоб найти потрібне тобі аніме, потрібно ввести \n@pankioto_bot Назва|Жанр\n\nАбо ж клацнути на кнопку <i><b>Пошук</b></i> \n\nНаприклад: <code>@pankioto_bot Пекельний рай</code>")
-    await update.effective_chat.send_video(
-        video="BAACAgIAAx0CecxgbAADGGWj3mePh59oE-CBKERduXCs7XMZAAIbQAACOPAhSSvohvo-RHGENAQ", caption=msg,
-        parse_mode=telegram.constants.ParseMode.HTML, reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Пошук", switch_inline_query_current_chat="")]
-        ]))
+    msg = ReadOtherFile("search_title_video.txt")
+    msg = msg.replace("BOTUSERNAME", context.bot.username)
+    if int(searchtitlevideo) == 0:
+        await update.effective_chat.send_message(text=msg, parse_mode=telegram.constants.ParseMode.HTML, reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Пошук", switch_inline_query_current_chat="")]
+            ]))
+    else:
+        await update.effective_chat.send_video(
+            video="BAACAgIAAx0CecxgbAADGGWj3mePh59oE-CBKERduXCs7XMZAAIbQAACOPAhSSvohvo-RHGENAQ", caption=msg,
+            parse_mode=telegram.constants.ParseMode.HTML, reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Пошук", switch_inline_query_current_chat="")]
+            ]))
 
 
 async def adm_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -528,6 +538,9 @@ async def add_title_standart14(update: Update, context: ContextTypes.DEFAULT_TYP
                f"Torrent: {trnt}\n\n"
                f"Рік {a[14]}\n\n"
                )
+        if len(msg) > 1000:
+            msg = ("Успішно добавлено!\n"
+                   "Додаткова інформація прихована, через перевищення ліміту символів.")
         sp = Path(f"Data/Images/{a[0]}")
         try:
             await chat.send_photo(caption=msg, photo=open(sp, "rb"))
@@ -895,7 +908,7 @@ async def ReplaceMoney(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await chat.send_message("Щоб записати новий текст, надішли мені нову інформацію одним повідомленням:")
         await chat.send_message("Примітка: форматування тексту відбувається за HTML")
         await chat.send_message("Стара інформація:")
-        oldinf = ReadOtherFile("groshi_hohliv.txt")
+        oldinf = ReadOtherFile(donatefile)
         if len(oldinf) == 0:
             oldinf = "Інформаційна вкладка пуста"
         await chat.send_message(oldinf)
@@ -909,7 +922,7 @@ async def ReplaceMoney1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
     user = update.effective_user
     text = msg.text
-    WriteOtherFile("groshi_hohliv.txt", msg.text)
+    WriteOtherFile(donatefile, msg.text)
     await chat.send_message("Готово! Інформація змінена!", reply_markup=ReplyKeyboardMarkup(k_admpanel))
     return ConversationHandler.END
 async def TitleList(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1374,7 +1387,7 @@ async def CallbackQuery(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await chat.send_video(video=FileID, caption=msg1, reply_markup=InlineKeyboardMarkup(btns))
     if qd == "na_revo":
         chat = update.effective_chat
-        pth = Path("Data/Other/groshi_hohliv.txt")
+        pth = Path(f"Data/Other/{donatefile}")
         with open(pth, "r") as file:
             msg = file.read()
         await query.message.delete()
